@@ -8,13 +8,11 @@ use Illuminate\Support\Facades\Auth;
 
 class OfficeController extends Controller
 {
-    // 全事業所のリストを取得 (改善①用)
     public function index()
     {
         return response()->json(Office::all());
     }
 
-    // 特定の事業所情報を更新 (改善②用)
     public function update(Request $request)
     {
         $validated = $request->validate([

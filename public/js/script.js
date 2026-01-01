@@ -8,7 +8,7 @@ if (csrfToken) {
     axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
 }
 
-// AIペルソナ設定（ベテラン現場リーダー・主任クラス）
+// AIペルソナ設定（ベテラン現場リーダー・主任クラス：厳守）
 const SYSTEM_PROMPT = [
     "あなたは介護現場の第一線で活躍し、後輩の指導やご家族対応も担当する『ベテランの介護現場リーダー（主任クラス）』です。",
     "提示された期間指定とバイタル数値の変化、およびケア内容に基づき、現場を支える責任者の視点で簡潔に回答を行ってください。",
@@ -54,10 +54,7 @@ function appendMessage(sender, message) {
 
 function speakText(text) {
     if (!$('#voice-read-toggle').prop('checked')) return;
-
-    let cleanText = text.replace(/<[^>]*>/g, '');
-    cleanText = cleanText.replace(/[＊\*・■□▲△▼▽：｜｜]/g, ' ');
-
+    let cleanText = text.replace(/<[^>]*>/g, '').replace(/[＊\*・■□▲△▼▽：｜｜]/g, ' ');
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = 'ja-JP';
@@ -67,22 +64,12 @@ function speakText(text) {
 }
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList;
 let recognition;
-
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.lang = 'ja-JP';
-    if (SpeechGrammarList) {
-        const words = ['バイタル', 'ケアプラン', 'ADL', '褥瘡', '要介護', '認知症', '清拭', '移乗'];
-        const grammar = '#JSGF V1.0; grammar kaigo; public <word> = ' + words.join(' | ') + ' ;';
-        const speechRecognitionList = new SpeechGrammarList();
-        speechRecognitionList.addFromString(grammar, 1);
-        recognition.grammars = speechRecognitionList;
-    }
     recognition.onresult = (e) => { $('#user-input').val(e.results[0][0].transcript); };
     recognition.onend = () => { $('#voice-input-btn').css('background', '#007bff').text('🎤'); };
-    recognition.onerror = () => { $('#voice-input-btn').css('background', '#007bff').text('🎤'); };
 }
 
 // =======================================================
@@ -106,9 +93,7 @@ function clearVitalChart() {
 function updateVitalChart(vitalData) {
     const ctx = document.getElementById('vitalChart').getContext('2d');
     if (vitalChart) { vitalChart.destroy(); }
-
     vitalData.sort((a, b) => new Date(a.date) - new Date(b.date));
-
     vitalChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -130,7 +115,7 @@ function updateVitalChart(vitalData) {
 }
 
 // =======================================================
-// 4. 利用者・データ取得関連
+// 4. データ取得・表示関連
 // =======================================================
 
 async function fetchClients() {
@@ -142,6 +127,20 @@ async function fetchClients() {
             response.data.forEach(c => $el.append(`<option value="${c.id}">${c.id}: ${c.client_name}</option>`));
         });
     } catch (e) { console.error(e); }
+}
+
+async function fetchOfficeInfo() {
+    try {
+        const response = await axios.get('/web-api/offices');
+        if (response.data.length > 0) {
+            const office = response.data[0];
+            $('#prov-id').val(office.id);
+            $('#prov-name').val(office.name);
+            $('#prov-postcode').val(office.postcode);
+            $('#prov-tel').val(office.tel);
+            $('#prov-address').val(office.address);
+        }
+    } catch (e) { console.error("事業所情報取得エラー:", e); }
 }
 
 async function renderModalClientList() {
@@ -169,7 +168,7 @@ async function renderRecordList() {
             <td style="padding:10px; border-bottom:1px solid #eee;">${dt}</td>
             <td style="padding:10px; border-bottom:1px solid #eee;">${r.client_id}</td>
             <td style="padding:10px; border-bottom:1px solid #eee; max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${r.content}</td>
-            <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">${r.body_temp}℃ / ${r.blood_pressure_high}/${r.blood_pressure_low}</td>
+            <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">${r.body_temp}℃</td>
             <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">
                 <button type="button" class="select-record-btn" data-record='${JSON.stringify(r)}' style="background:#6c757d; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">編集</button>
             </td>
@@ -184,43 +183,52 @@ async function renderRecordList() {
 
 $(document).ready(function() {
     fetchClients();
+    fetchOfficeInfo();
 
-    // --- 利用者登録フォーム関連 ---
-    
-    $('#search-zipcode').on('click', async function() {
-        const zip = $('#reg-zipcode').val().replace('-', '');
-        if (zip.length !== 7) { alert("7桁で入力してください"); return; }
+    // 自事業者情報の更新
+    $('#provider-register-form').on('submit', async function(e) {
+        e.preventDefault();
+        const data = {
+            id: $('#prov-id').val(),
+            name: $('#prov-name').val(),
+            postcode: $('#prov-postcode').val(),
+            tel: $('#prov-tel').val(),
+            address: $('#prov-address').val()
+        };
         try {
-            const res = await axios.get(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zip}`);
-            if (res.data.results) {
-                const r = res.data.results[0];
-                $('#reg-address').val(r.address1 + r.address2 + r.address3);
-            }
-        } catch (e) { alert("検索失敗"); }
+            const res = await axios.post('/web-api/offices/update', data);
+            if (res.data.status === 'success') alert(res.data.message);
+        } catch (e) { alert("更新に失敗しました"); }
     });
 
-    $('#form-reset-btn').on('click', function() {
-        if(confirm('入力内容をクリアしますか？')) {
-            $('#client-register-form')[0].reset();
-            $('#reg-client-id').val('').attr('readonly', false).css('background', '#fff');
-            $('#client-delete-btn').hide();
-            $('#client-submit-btn').text('情報を保存する').css('background', '#28a745');
+    // 住所検索ボタン
+$('#search-zipcode').on('click', async function() {
+    const zip = $('#reg-zipcode').val().replace(/[^0-9]/g, ''); // 数字以外を除去
+    if (zip.length !== 7) { alert("郵便番号を7桁で入力してください"); return; }
+    
+    const $btn = $(this);
+    $btn.text('...').prop('disabled', true); // 二重押し防止
+
+    try {
+        // 直接 zipcloud を叩かず、Laravelのルート(/web-api/zipcode/...)を経由する
+        const res = await axios.get(`/web-api/zipcode/${zip}`);
+        
+        if (res.data.status === 200 && res.data.results) {
+            const r = res.data.results[0];
+            const fullAddress = r.address1 + r.address2 + r.address3;
+            $('#reg-address').val(fullAddress);
+        } else {
+            alert("住所が見つかりませんでした。番号を確認してください。");
         }
-    });
+    } catch (e) {
+        console.error("住所検索エラー:", e);
+        alert("検索に失敗しました。");
+    } finally {
+        $btn.text('検索').prop('disabled', false);
+    }
+});
 
-    $('#client-delete-btn').on('click', async function() {
-        const cid = $('#reg-client-id').val();
-        if (!cid) return;
-        if (confirm(`利用者ID: ${cid} を削除しますか？`)) {
-            try {
-                await axios.delete(`/web-api/clients/${cid}`);
-                alert("削除完了");
-                $('#form-reset-btn').click();
-                fetchClients();
-            } catch (e) { alert("削除失敗。記録が存在する可能性があります。"); }
-        }
-    });
-
+    // 利用者保存・更新
     $('#client-register-form').on('submit', async function(e) {
         e.preventDefault();
         const data = {
@@ -243,8 +251,7 @@ $(document).ready(function() {
         } catch (e) { alert("保存失敗"); }
     });
 
-    // --- ケア記録・バイタル保存処理 ---
-
+    // ケア記録保存
     $('#record-add-form').on('submit', async function(e) {
         e.preventDefault();
         const data = {
@@ -272,24 +279,11 @@ $(document).ready(function() {
         } catch (e) { alert("保存失敗"); }
     });
 
-    $('#record-reset-btn').on('click', function() {
-        $('#record-add-form')[0].reset();
-        $('#edit-record-id').val('');
-        $(this).hide();
-        $('#record-submit-btn').text('記録を保存').css('background', '#6c757d');
-    });
-
-    // --- バイタル分析・グラフ関連 ---
-
-    $('#search-start-date, #search-end-date, #client-select').on('change', function() {
-        clearVitalChart();
-    });
-
+    // グラフ更新
     $('#update-graph-btn').on('click', async function() {
         const cid = $('#client-select').val();
         if (!cid) { alert("利用者を選択してください"); return; }
-        const $btn = $(this);
-        $btn.text('...').prop('disabled', true);
+        const $btn = $(this); $btn.text('...').prop('disabled', true);
         try {
             const res = await axios.post('/web-api/ask-ai', {
                 clientId: cid, question: '', 
@@ -297,52 +291,16 @@ $(document).ready(function() {
                 endDate: $('#search-end-date').val(),
                 systemPrompt: 'データ取得'
             });
-            if (res.data.vitalData && res.data.vitalData.length > 0) {
-                updateVitalChart(res.data.vitalData);
-            } else { alert("データなし"); }
-        } catch (e) { alert("エラー"); }
-        finally { $btn.text('表示').prop('disabled', false); }
+            if (res.data.vitalData) updateVitalChart(res.data.vitalData);
+        } catch (e) { alert("エラー"); } finally { $btn.text('表示').prop('disabled', false); }
     });
 
-    $('.quick-date-btn').on('click', function() {
-        const range = $(this).data('range');
-        const end = new Date();
-        let start = new Date();
-        if (range === 'week') start.setDate(end.getDate() - 7);
-        else if (range === 'month') start.setDate(1);
-        $('#search-start-date').val(start.toISOString().split('T')[0]);
-        $('#search-end-date').val(end.toISOString().split('T')[0]);
-        clearVitalChart();
-    });
-
-    // --- 音声・チャット関連 ---
-
-    $('#voice-read-toggle').on('change', function() {
-        const isChecked = $(this).prop('checked');
-        if (isChecked) {
-            $('#toggle-bg').css('background-color', '#28a745');
-            $('#toggle-circle').css('transform', 'translateX(22px)');
-        } else {
-            $('#toggle-bg').css('background-color', '#ccc');
-            $('#toggle-circle').css('transform', 'translateX(0px)');
-            window.speechSynthesis.cancel();
-        }
-    });
-
-    $('#voice-input-btn').on('click', function() {
-        if (recognition) {
-            recognition.start();
-            $(this).css('background', '#dc3545').text('●'); 
-        }
-    });
-
+    // AIチャット送信
     $('#chat-form').on('submit', async function(e) {
         e.preventDefault();
         const q = $('#user-input').val();
         const cid = $('#client-select').val();
-        appendMessage('user', q);
-        $('#user-input').val('');
-        appendMessage('ai', '分析中...');
+        appendMessage('user', q); $('#user-input').val(''); appendMessage('ai', '分析中...');
         try {
             const res = await axios.post('/web-api/ask-ai', {
                 clientId: cid, question: q,
@@ -350,28 +308,34 @@ $(document).ready(function() {
                 endDate: $('#search-end-date').val(),
                 systemPrompt: SYSTEM_PROMPT
             });
-            $('#chat-window .ai-message').last().remove();
+            $('.ai-message').last().remove();
             appendMessage('ai', res.data.answer);
             speakText(res.data.answer);
             if(cid && res.data.vitalData) updateVitalChart(res.data.vitalData);
-        } catch (e) { 
-            $('#chat-window .ai-message').last().remove();
-            appendMessage('ai', '通信エラー'); 
-        }
+        } catch (e) { $('.ai-message').last().remove(); appendMessage('ai', '通信エラー'); }
     });
 
-    $('#chat-clear-btn').on('click', function() {
+    // その他UI操作
+    $('#form-reset-btn').on('click', function() {
         if(confirm('クリアしますか？')) {
-            $('#chat-window').empty();
-            window.speechSynthesis.cancel();
+            $('#client-register-form')[0].reset();
+            $('#reg-client-id').val('').attr('readonly', false);
+            $('#client-delete-btn').hide();
         }
     });
 
-    // --- モーダル・その他 ---
+    $('#voice-read-toggle').on('change', function() {
+        const ok = $(this).prop('checked');
+        $('#toggle-bg').css('background-color', ok ? '#28a745' : '#ccc');
+        $('#toggle-circle').css('transform', ok ? 'translateX(22px)' : 'translateX(0px)');
+        if (!ok) window.speechSynthesis.cancel();
+    });
+
+    $('#voice-input-btn').on('click', function() { recognition.start(); $(this).css('background', '#dc3545').text('●'); });
 
     $(document).on('click', '.select-client-btn', function() {
         const c = $(this).data('client');
-        $('#reg-client-id').val(c.id).attr('readonly', true).css('background', '#f0f0f0');
+        $('#reg-client-id').val(c.id).attr('readonly', true);
         $('#reg-client-name').val(c.client_name);
         $('#reg-zipcode').val(c.postcode);
         $('#reg-address').val(c.address);
@@ -382,9 +346,7 @@ $(document).ready(function() {
         $('#reg-care-manager').val(c.care_manager);
         $('#reg-care-manager-tel').val(c.care_manager_tel);
         $('#client-delete-btn').show();
-        $('#client-submit-btn').text('情報を更新する').css('background', '#e67e22');
         $('#client-modal').fadeOut(200);
-        $('html, body').animate({ scrollTop: $("#client-register-section").offset().top - 50 }, 500);
     });
 
     $(document).on('click', '.select-record-btn', function() {
@@ -406,5 +368,5 @@ $(document).ready(function() {
 
     $('#open-client-modal').on('click', () => { renderModalClientList(); $('#client-modal').fadeIn(200); });
     $('#open-record-modal').on('click', () => { renderRecordList(); $('#record-modal').fadeIn(200); });
-    $('#close-client-modal, #close-record-modal').on('click', function() { $('#client-modal, #record-modal').fadeOut(200); });
+    $('#close-client-modal, #close-record-modal').on('click', () => $('.modal').fadeOut(200));
 });
