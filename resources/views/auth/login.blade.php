@@ -13,16 +13,26 @@
         </div>
 
         <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+<div class="mt-4" x-data="{ show: false }">
+    <x-input-label for="password" value="パスワード" />
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
+    <div class="relative">
+        <x-text-input id="password" class="block mt-1 w-full pr-16"
+                        ::type="show ? 'text' : 'password'" 
+                        name="password"
+                        required autocomplete="current-password" />
 
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <button type="button" @click="show = !show" 
+                    class="text-gray-500 hover:text-gray-700 focus:outline-none bg-gray-100 px-2 py-1 rounded border border-gray-200">
+                <span x-show="!show" class="text-xs font-medium">表示</span>
+                <span x-show="show" x-cloak class="text-xs font-medium">非表示</span>
+            </button>
         </div>
+    </div>
+
+    <x-input-error :messages="$errors->get('password')" class="mt-2" />
+</div>
 
         <!-- Remember Me -->
         <div class="block mt-4">

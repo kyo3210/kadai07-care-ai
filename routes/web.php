@@ -53,6 +53,9 @@ Route::middleware(['auth'])->prefix('web-api')->group(function () {
     // 事業所情報の更新 (POST) ★JS側の /offices/update と整合性をとりました
     Route::post('/offices/update', [OfficeController::class, 'update']);
 
+    Route::get('/staff', [OfficeController::class, 'indexStaff']);
+    Route::post('/staff', [OfficeController::class, 'storeStaff']);
+
     // --- 外部API連携 (CORS回避用プロキシ) ---
 // 住所検索プロキシ
     Route::get('/zipcode/{zip}', function($zip) {

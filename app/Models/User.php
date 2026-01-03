@@ -6,6 +6,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+// ↓ 追加が必要なインポート
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Notifications\Messages\MailMessage;
 
 class User extends Authenticatable
 {
@@ -21,6 +24,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'office_id', 
     ];
 
     /**
@@ -45,4 +49,31 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-}
+
+    /**
+     * パスワードリセット通知の送信
+     * クラスの波括弧 { } の内側に入れる必要があります
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new class($token) extends ResetPassword {
+            public function toMail($notifiable)
+            {
+                $url = url(route('password.reset', [
+                    'token' => $this->token,
+                    'email' => $notifiable->getEmailForPasswordReset(),
+                ], false));
+
+                return (new MailMessage)
+                    ->subject('【大切なお知らせ】パスワード再設定のご案内')
+                    ->greeting('お疲れ様です、' . $notifiable->name . 'さん。')
+                    ->line('パスワードをお忘れとのことで承りました。以下のボタンから新しいパスワードを設定いただけます。')
+                    ->action('新しいパスワードを登録する', $url)
+                    ->line('※このURLの有効期限は60分間です。')
+                    ->line('もし心当たりがない場合は、このメールを破棄してください。そのままのパスワードでご利用いただけます。')
+                    ->salutation('よろしくお願いいたします。');
+            }
+        });
+    }
+} 
+
