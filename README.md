@@ -1,59 +1,62 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+## CareSupport AI
+(ログインユーザ/パスワード)hanako@co.jp/12345678
+![alt text](image.png)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 2.制作LPの説明（40文字程度）
+・Laravel sail環境にトライした
 
-## About Laravel
+・さくらサーバにアップロードを行った
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+(1)👤 利用者 登録/編集
+　　新規利用者情報の登録、登録済の利用者の一覧表示・編集を可能とした
+![alt text](image-1.png)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+(2)📝 ケア記録・バイタル入力
+　　過去のケア記録の一覧表示、編集を可能とした
+![alt text](image-2.png)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+(3)🏢 自事業者（自社）情報
+　　ログインユーザ管理の為、事業所情報と所属職員(ユーザ/パスワード管理)ができるようにした
+![alt text](image-3.png)
 
-## Learning Laravel
+(4)💬 AIチャット相談
+　　対象利用者を選択・・・・上記(2)のケア記録のデータから質問に回答
+　　対象利用者を未選択・・・一般的な回答を行う
+![alt text](image-4.png)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+(5)📊 バイタル分析
+　　上記(4)の回答に合わせてバイタルグラフを表示する
+　　チャットとは別に指定期間でバイタルグラフも表示可能とする
+![alt text](image-5.png)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 3.工夫した点・こだわった点 
+(1)郵便番号で住所登録を可能とした。登録済利用者一覧モーダルを表示できようにした。
 
-## Laravel Sponsors
+(2)過去のケア記録一覧モーダルを表示して、フィルタを付けた。
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+(3)職員(ログインユーザ)を登録可能として、自事業者情報のIDと紐づくようにした。パスワードを表示確認できるようにした。
 
-### Premium Partners
+(4)AIの音声回答スイッチを設けてON/OFFを選択可能とした
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+(5)バイタル分析期間に「直近1週間」「今月」ボタンをつけた
 
-## Contributing
+## 4.次回トライしたこと（または機能）
+・イメージ画像を決めてリンクを正しく設定する
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+・スケジュール機能の実装/本日の予定機能の実装
 
-## Code of Conduct
+・GoogleMapとの連携で利用者住所の経路確認を可能とする
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+・AIの音声読み上げの改善
 
-## Security Vulnerabilities
+・画面構成/メニュー表示の改善
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+・ケア記録のページネーション
 
-## License
+## 5.備考（感想、シェアしたいこと等なんでも） 
+Dockerが(PHP8.4)なのに対し、さくらサーバは現在(PHP8.3)までだったので、
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+すんなりとはアップロード後にページが表示されませんでしたが、アップロードを
+
+完了した後にページが表示された時はとても嬉しかったです
+
