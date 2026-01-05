@@ -1,6 +1,7 @@
 ## 1.CareSupport AI
 ## https://careai.jp/login
 (ログインユーザ/パスワード)hanako@co.jp/12345678
+(データベース添付)laravel.sql
 ![alt text](image.png)
 
 ## 2.制作LPの説明（40文字程度）
